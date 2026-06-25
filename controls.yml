@@ -1,0 +1,356 @@
+# =========================================================
+# VARIABLES  (single source of truth)
+# =========================================================
+
+variables:
+
+  # time
+  time: 0
+
+  # motion
+  current_speed: 0.6
+  target_speed: 0.6
+  speed_nudge: 0.1
+  wind_angle: 0.0
+
+  # visual core
+  cloud_density: 0.7
+  brightness: 1.0
+  color_mod_enabled: 1.0
+
+  base_hue: 0.55
+  layer_hue: 0.65
+  color_pan: 0.0
+
+  # effects
+  strobe: 0.0
+  aurora: 0.0
+  lightning: 0.0
+
+  warp_strength: 0.1
+  warp_x: 0.5
+  warp_y: 0.5
+
+  energy: 1.0
+
+  # audio reactive helpers
+  bass_push: 0.0
+  transient_push: 0.0
+
+  background_list: 
+    - "assets/nebula.png"
+    - "assets/pastel_sunset.png"
+    - "assets/drive.mp4"
+    - "assets/blackhole.png"
+    - "assets/sky_clouds.png"
+  bg_mix: 0.7
+  bg_scroll: 0.05
+  bg_zoom: 0.7
+  video_speed: 1.0
+
+
+# =========================================================
+# LFOs  (always-running motion)
+# =========================================================
+
+lfos:
+
+  # slow color cycling
+  color_pan:
+    shape: triangle
+    freq: 0.05
+    amp: 1.5
+    offset: 0
+
+  # gentle fisheye breathing
+  warp_strength:
+    shape: sine
+    freq: 0.25
+    amp: 0.125
+    offset: 0.125
+
+  # small hue wobble
+  hue_lfo:
+    shape: sine
+    freq: 0.07
+    amp: 0.08
+    offset: 0
+
+
+
+# =========================================================
+# RULES  (evaluated every frame)
+# =========================================================
+
+rules:
+
+  # always advance time
+  - "time += dt"
+
+  # audio → brightness (VERY obvious)
+  - "brightness = 0.8 + audio.bass * 0.015"
+
+  # transient flash
+  - "transient_push = audio.transient * 0.02"
+
+  # lightning decay
+  - "lightning *= 0.92"
+
+  # drifting wind rotation
+  - "wind_angle += 0.15 * dt"
+
+  # hue wobble
+  - "base_hue = 0.55 + hue_lfo"
+
+  # energy follows audio
+  - "energy = 1.0 + transient_push"
+
+  # smooth speed
+  - "target_speed += speed_nudge * dt"       # gradual
+  - "speed_nudge *= 0.9"                     # decay nudge over time
+  - "current_speed += (target_speed - current_speed) * 0.05"
+
+
+
+# =========================================================
+# KEYBOARD MAP
+# =========================================================
+
+keyboard:
+
+  # BIG obvious effects
+  K_1: strobe_toggle
+  K_2: aurora_toggle
+  K_3: lightning_pulse
+  K_4: toggle_color_mod
+
+
+  # density
+  K_q: density_down
+  K_w: density_up
+
+  # brightness
+  K_a: brightness_down
+  K_s: brightness_up
+
+  # speed
+  K_z: speed_down
+  K_x: speed_up
+
+  # warp control
+  K_c: warp_down
+  K_v: warp_up
+  K_UP: warp_move_up
+  K_DOWN: warp_move_down
+  K_LEFT: warp_move_left
+  K_RIGHT: warp_move_right
+
+
+  # background control
+  K_LEFTBRACKET: bg_less
+  K_RIGHTBRACKET: bg_more
+  K_KP1: bg_1
+  K_KP2: bg_2
+  K_KP3: bg_3
+  K_KP4: bg_4
+  K_KP5: bg_5
+  K_KP_PLUS: video_speed_up
+  K_KP_MINUS: video_speed_down
+
+
+# =========================================================
+# TRIGGERS
+# =========================================================
+
+triggers:
+
+  pulse:
+    - "lightning = 1.0"
+
+# =========================================================
+# ACTIONS
+# =========================================================
+
+actions:
+
+  # --------------------------------
+  # toggles
+  # --------------------------------
+
+  strobe_toggle:
+    target: mod.strobe
+    op: toggle01
+    print: "strobe"
+
+  aurora_toggle:
+    target: mod.aurora
+    op: toggle01
+    print: "aurora"
+
+  lightning_pulse:
+    target: mod.trigger
+    op: call
+    value: ["pulse"]
+
+  toggle_color_mod:
+    target: mod.color_mod_enabled
+    op: toggle01
+
+  # --------------------------------
+  # density
+  # --------------------------------
+
+  density_up:
+    target: mod.cloud_density
+    op: add
+    value: 0.1
+    max: 2
+
+  density_down:
+    target: mod.cloud_density
+    op: sub
+    value: 0.1
+    min: 0
+
+
+  # --------------------------------
+  # brightness
+  # --------------------------------
+
+  brightness_up:
+    target: mod.brightness
+    op: add
+    value: 0.1
+    max: 3
+
+  brightness_down:
+    target: mod.brightness
+    op: sub
+    value: 0.1
+    min: 0.2
+
+
+  # --------------------------------
+  # drift speed
+  # --------------------------------
+
+  speed_up:
+    target: mod.target_speed
+    op: add
+    value: 0.05
+    max: 2.5
+
+  speed_down:
+    target: mod.target_speed
+    op: sub
+    value: 0.05
+    min: 0
+
+
+  # --------------------------------
+  # warp
+  # --------------------------------
+
+  warp_up:
+    target: mod.warp_strength
+    op: add
+    value: 0.5
+    max: 1
+
+  warp_down:
+    target: mod.warp_strength
+    op: sub
+    value: 0.5
+    min: 0
+
+  warp_move_up:
+    target: mod.warp_y
+    op: add
+    rate: 1.0
+    continuous: true
+    min: 0.0
+    max: 1.0
+
+  warp_move_down:
+    target: mod.warp_y
+    op: sub
+    rate: 1.0
+    continuous: true
+    min: 0.0
+    max: 1.0
+
+  warp_move_right:
+    target: mod.warp_x
+    op: add
+    rate: 1.0
+    continuous: true
+    min: 0.0
+    max: 1.0
+
+  warp_move_left:
+    target: mod.warp_x
+    op: sub
+    rate: 1.0
+    continuous: true
+    min: 0.0
+    max: 1.0
+
+
+  # ------------------------------
+  # background
+  # ------------------------------
+
+  bg_1:
+    target: renderer.set_background
+    op: call
+    value: [0]
+
+  bg_2:
+    target: renderer.set_background
+    op: call
+    value: [1]
+
+  bg_3:
+    target: renderer.set_background
+    op: call
+    value: [2]
+
+  bg_4:
+    target: renderer.set_background
+    op: call
+    value: [3]
+
+  bg_5:
+    target: renderer.set_background
+    op: call
+    value: [4]
+
+  bg_more:
+    target: mod.bg_mix
+    op: add
+    value: 0.1
+    min: 0
+    max: 1
+
+  bg_less:
+    target: mod.bg_mix
+    op: sub
+    value: 0.1
+    min: 0
+    max: 1
+
+  video_speed_up:
+    target: renderer.video_speed
+    op: add
+    rate: 0.5
+    continuous: true
+    min: 0
+    max: 3
+
+  video_speed_down:
+    target: renderer.video_speed
+    op: sub
+    rate: 0.5
+    continuous: true
+    min: 0
+    max: 3

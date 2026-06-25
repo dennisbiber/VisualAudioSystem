@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# CUDA / compiled artifacts
+*.so
+*.o
+*.obj
+*.cubin
+*.ptx
+*.fatbin
+build/
+dist/
+
+# Media — AV projects accumulate big files; keep large assets out
+# (uncomment what applies, or keep only small sample clips)
+# *.wav
+# *.mp4
+# *.mov
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Secrets / local config
+.env
+*.local
